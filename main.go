@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"gopkg.in/mgo.v2"
-	//"gopkg.in/mgo.v2/bson"
+	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -71,13 +71,27 @@ func listStudies(w http.ResponseWriter, r *http.Request) (interface{}, *handlerE
 }
 
 func addStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
+	var err error
+
 	payload, e := parseStudyRequest(r)
 	if e != nil {
 		return nil, e
 	}
-	studies = append(studies, payload)
 
-	// we return the book we just made so the client can see the ID if they want
+	// Store the new study in the database
+	// First, let's get a new id
+	obj_id := bson.NewObjectId()
+	payload.Id = obj_id
+
+	err = collection.Insert(&payload)
+	if err != nil {
+		panic(err)
+		return nil, &handlerError{err, "Could not insert study", http.StatusBadRequest}
+	} else {
+		log.Printf("Inserted new study %s with name %s", payload.Id, payload.StudyName)
+	}
+
+	// we return the study we just made so the client can see the ID if they want
 	return payload, nil
 }
 
@@ -126,7 +140,7 @@ func main() {
 	}
 	defer session.Close()
 	session.SetMode(mgo.Monotonic, true)
-	collection = session.DB("Kittens").C("kittens")
+	collection = session.DB("test").C("studies")
 
 	log.Printf("Running on port %d\n", *port)
 
