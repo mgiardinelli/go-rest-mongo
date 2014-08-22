@@ -20,7 +20,7 @@ type handlerError struct {
 	Code    int
 }
 
-//Mongo colleciton & session
+//Mongo collection & session
 var (
 	session    *mgo.Session
 	collection *mgo.Collection
@@ -127,34 +127,6 @@ func main() {
 	defer session.Close()
 	session.SetMode(mgo.Monotonic, true)
 	collection = session.DB("Kittens").C("kittens")
-
-	/////////////////////////////////////////////////
-	//Study Setup -- Remove
-	// list of all of the levels
-	var levels = make([]level, 0)
-
-	// list of all of the values
-	var valueL1 = make([]value, 0)
-	var valueL2 = make([]value, 0)
-
-	valueL1 = append(valueL1, value{1, "Sony", "user1"})
-	valueL1 = append(valueL1, value{2, "LG", "user1"})
-
-	valueL2 = append(valueL2, value{1, "Tv", "user1"})
-	valueL2 = append(valueL2, value{2, "Blu-Ray", "user1"})
-
-	levels = append(levels, level{1, valueL1, "Vendor", "user1"})
-	levels = append(levels, level{2, valueL2, "Category", "user1"})
-
-	//Study setup
-	newStudy := study{
-		StudyName: "IND Study - 20140822",
-		Levels:    levels,
-	}
-
-	studies = append(studies, newStudy)
-
-	/////////////////////////////////////////////////
 
 	log.Printf("Running on port %d\n", *port)
 
