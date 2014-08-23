@@ -61,6 +61,7 @@ func (fn handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s %d", r.RemoteAddr, r.Method, r.URL, 200)
 }
 
+//get all of the studies from the data repository
 func listStudies(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
 	log.Printf("Call to studies list")
 
@@ -75,6 +76,7 @@ func listStudies(w http.ResponseWriter, r *http.Request) (interface{}, *handlerE
 	return studies, nil
 }
 
+//add a study to the data repository
 func addStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
 	var err error
 
@@ -100,19 +102,64 @@ func addStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerErro
 	return payload, nil
 }
 
+//get a study based on id
 func getStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
 	// mux.Vars grabs variables from the path
 	id := mux.Vars(r)["id"]
-	log.Printf("Trying to find study: " + id)
 
-	s := study{}
-	e := collection.FindId(bson.ObjectIdHex(id)).One(&s)
-
+	output, e := dbGetStudy(collection, id)
 	if e != nil {
-		return nil, &handlerError{nil, "Could not find study " + id, http.StatusNotFound}
+		return nil, &handlerError{nil, "Could not decode study " + id, http.StatusNotFound}
 	}
 
-	return s, nil
+	//need to apply type assertion since we are returning an interface{}
+	study := output.(study)
+
+	return study, nil
+}
+
+//update the study information
+func updateStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
+	// mux.Vars grabs variables from the path
+	vars := mux.Vars(r)
+	studyId := vars["id"]
+	id := bson.ObjectIdHex(studyId)
+
+	s := study{}
+	e := json.NewDecoder(r.Body).Decode(&s)
+
+	if e != nil {
+		return nil, &handlerError{nil, "Could not decode study " + studyId, http.StatusNotFound}
+	}
+
+	// Update the database
+	e = collection.Update(bson.M{"_id": id},
+		bson.M{"name": s.StudyName,
+			"_id":         id,
+			"description": s.Description,
+		})
+	if e == nil {
+		log.Printf("Updated study %s studyname to %s", id, s.StudyName)
+	} else {
+		panic(e)
+	}
+
+	return make(map[string]string), nil
+}
+
+//remove the study from the database
+func removeStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
+	// mux.Vars grabs variables from the path
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	// Remove it from database
+	err := collection.Remove(bson.M{"_id": bson.ObjectIdHex(id)})
+	if err != nil {
+		log.Printf("Could not find study %s to delete", id)
+	}
+
+	return make(map[string]string), nil
 }
 
 func parseStudyRequest(r *http.Request) (study, *handlerError) {
@@ -149,6 +196,13 @@ func main() {
 	router.Handle("/studies", handler(listStudies)).Methods("GET")
 	router.Handle("/studies", handler(addStudy)).Methods("POST")
 	router.Handle("/studies/{id}", handler(getStudy)).Methods("GET")
+	router.Handle("/studies/{id}", handler(updateStudy)).Methods("POST")
+	router.Handle("/studies/{id}", handler(removeStudy)).Methods("DELETE")
+
+	//TODO: Add levels
+	//TODO: Add values
+
+	//Base routes
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", fileHandler))
 	http.Handle("/", router)
 
