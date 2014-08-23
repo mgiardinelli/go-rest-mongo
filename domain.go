@@ -6,10 +6,11 @@ import (
 
 // study model
 type study struct {
-	Id        bson.ObjectId `bson:"_id" json:"id"`
-	StudyName string        `json:"studyname"`
-	Levels    []level       `json:"levels"`
-	CreatedBy string        `json:"createdby"`
+	Id          bson.ObjectId `bson:"_id" json:"id"`
+	StudyName   string        `json:"studyname"`
+	Description string        `json:"description"`
+	Levels      []level       `json:"levels"`
+	CreatedBy   string        `json:"createdby"`
 }
 
 // level model

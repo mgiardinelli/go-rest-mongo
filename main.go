@@ -26,10 +26,6 @@ var (
 	collection *mgo.Collection
 )
 
-// list of all of the studies
-//TODO: Swap with mongo/ cassandra
-var studies = make([]study, 0)
-
 // a custom type that we can use for handling errors and formatting responses
 type handler func(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError)
 
@@ -67,6 +63,15 @@ func (fn handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func listStudies(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
 	log.Printf("Call to studies list")
+
+	studies := make([]study, 0)
+	log.Printf("Call to mongo to get studies")
+	iter := collection.Find(nil).Iter()
+	result := study{}
+	for iter.Next(&result) {
+		studies = append(studies, result)
+	}
+
 	return studies, nil
 }
 
@@ -93,6 +98,21 @@ func addStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerErro
 
 	// we return the study we just made so the client can see the ID if they want
 	return payload, nil
+}
+
+func getStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
+	// mux.Vars grabs variables from the path
+	id := mux.Vars(r)["id"]
+	log.Printf("Trying to find study: " + id)
+
+	s := study{}
+	e := collection.FindId(bson.ObjectIdHex(id)).One(&s)
+
+	if e != nil {
+		return nil, &handlerError{nil, "Could not find study " + id, http.StatusNotFound}
+	}
+
+	return s, nil
 }
 
 func parseStudyRequest(r *http.Request) (study, *handlerError) {
@@ -128,6 +148,7 @@ func main() {
 	router.Handle("/", http.RedirectHandler("/static/", 302))
 	router.Handle("/studies", handler(listStudies)).Methods("GET")
 	router.Handle("/studies", handler(addStudy)).Methods("POST")
+	router.Handle("/studies/{id}", handler(getStudy)).Methods("GET")
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", fileHandler))
 	http.Handle("/", router)
 
