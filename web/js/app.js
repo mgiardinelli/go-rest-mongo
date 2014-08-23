@@ -10,11 +10,11 @@
 		$scope.selected = null;
 
 		$scope.list = function(idx){
-			// Notice calls to Book are often given callbacks.
+			// Notice calls to Study are often given callbacks.
 			Study.query(function(data){
 				$scope.studies = data;
 				if(idx != undefined) {
-					$scope.selected = $scope.books[idx];
+					$scope.selected = $scope.studies[idx];
 					$scope.selected.idx = idx;
 				}
 			}, function(error){
@@ -25,7 +25,7 @@
 		$scope.list();
 
 		$scope.get = function(idx){
-			// Passing parameters to Book calls will become arguments if
+			// Passing parameters to Study calls will become arguments if
 			// we haven't defined it as part of the path (we did with id)
 			Study.get({id: $scope.studies[idx].id}, function(data){
 				$scope.selected = data;
@@ -34,7 +34,7 @@
 		};
 
 		$scope.add = function() {
-			// I was lazy with the user input.
+			// TODO: Need to add actual entry forms
 			var studyname = prompt("Enter the book's study name.");
 			if(studyname == null){
 				return;
