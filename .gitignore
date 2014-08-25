@@ -16,6 +16,7 @@ $RECYCLE.BIN/
 
 # Golang app file
 *.exe
+*.exe~
 
 # =========================
 # Operating System Files
@@ -29,7 +30,8 @@ $RECYCLE.BIN/
 .LSOverride
 
 # Icon must ends with two \r.
-Icon
+Icon
+
 
 # Thumbnails
 ._*
