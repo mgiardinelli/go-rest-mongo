@@ -12,9 +12,16 @@
 <script src="js/app.js"></script>
 <body ng-controller="MainCtl">
 	<div class="jumbotron">
+		<button class="btn btn-danger pull-right" ng-click="remove(selected.idx)">
+			<i class="fa fa-trash-o"></i> Remove this study
+		</button>
+		<button class="btn btn-primary pull-right" ng-click="update(selected.idx)">
+			<i class="fa fa-pencil"></i> Update this study
+		</button>
 		<button class="btn btn-primary pull-right" ng-click="add()">
 			<i class="fa fa-plus"></i> Add study
 		</button>
+
 		<h1>My Demo</h1>
 	</div>
 	<div class="container-fluid">
@@ -22,28 +29,20 @@
 			<div class="col-sm-3 well">
 				<h3>Studies</h3>
 				<ul class="nav nav-pills nav-stacked">
-					<li ng-class="{active: b.studyname == selected.studyname}" ng-repeat="b in studies">
-						<a href="" ng-click="get($index)">{{b.studyname}}</a>
+					<li ng-class="{active: s.studyname == selected.studyname}" ng-repeat="s in studies">
+						<a href="" ng-click="get($index)">{{s.studyname}}</a>
 					</li>
 				</ul>
 			</div>
-			<div class="col-sm-6" ng-show="selected">
+			<div class="col-sm-9" ng-show="selected">
 				<h2>{{selected.studyname}}</h2>
 				<dl class="dl-horizontal">
 					<dt>Description:</dt>
 					<dd>{{selected.description}}</dd>
 				</dl>
 			</div>
-			<div class="col-sm-3" ng-show="selected">
-				<button class="btn btn-primary form-control" ng-click="update(selected.idx)">
-					<i class="fa fa-pencil"></i> Update this study
-				</button>
-				<button class="btn btn-danger form-control" ng-click="remove(selected.idx)">
-					<i class="fa fa-trash-o"></i> Remove this study
-				</button>
-			</div>
 		</div>
 	</div>
-<script src="http://code.angularjs.org/1.2.10/angular-resource.min.js"></script>
+	<script src="http://code.angularjs.org/1.2.10/angular-resource.min.js"></script>
 </body>
 </html>

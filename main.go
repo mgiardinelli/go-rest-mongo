@@ -70,33 +70,35 @@ func listStudies(w http.ResponseWriter, r *http.Request) (interface{}, *handlerE
 	iter := collection.Find(nil).Iter()
 	result := study{}
 	for iter.Next(&result) {
+		log.Printf(result.StudyName)
 		studies = append(studies, result)
 	}
-
+	log.Printf("Number of studies retrieved %d", len(studies))
 	return studies, nil
 }
 
 //add a study to the data repository
-func addStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
-	var err error
+func addOrUpdateStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
 
 	payload, e := parseStudyRequest(r)
 	if e != nil {
 		return nil, e
 	}
 
-	// Store the new study in the database
-	// First, let's get a new id
-	obj_id := bson.NewObjectId()
-	payload.Id = obj_id
+	//If no id then set one
+	if payload.Id == "" {
+		payload.Id = bson.NewObjectId()
+	}
 
-	err = collection.Insert(&payload)
+	//perform the upsert
+	_, err := collection.UpsertId(payload.Id, payload)
 	if err != nil {
-		panic(err)
-		return nil, &handlerError{err, "Could not insert study", http.StatusBadRequest}
+		return nil, &handlerError{err, "Could not upsert study", http.StatusBadRequest}
 	} else {
 		log.Printf("Inserted new study %s with name %s", payload.Id, payload.StudyName)
 	}
+
+	//log.Printf("Records Updated: %d  MongoId: %d", info.Updated, info.UpsertedId)
 
 	// we return the study we just made so the client can see the ID if they want
 	return payload, nil
@@ -106,45 +108,16 @@ func addStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerErro
 func getStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
 	// mux.Vars grabs variables from the path
 	id := mux.Vars(r)["id"]
-
-	output, e := dbGetStudy(collection, id)
-	if e != nil {
-		return nil, &handlerError{nil, "Could not decode study " + id, http.StatusNotFound}
-	}
-
-	//need to apply type assertion since we are returning an interface{}
-	study := output.(study)
-
-	return study, nil
-}
-
-//update the study information
-func updateStudy(w http.ResponseWriter, r *http.Request) (interface{}, *handlerError) {
-	// mux.Vars grabs variables from the path
-	vars := mux.Vars(r)
-	studyId := vars["id"]
-	id := bson.ObjectIdHex(studyId)
+	log.Printf("Trying to find study: " + id)
 
 	s := study{}
-	e := json.NewDecoder(r.Body).Decode(&s)
+	e := collection.FindId(bson.ObjectIdHex(id)).One(&s)
 
 	if e != nil {
-		return nil, &handlerError{nil, "Could not decode study " + studyId, http.StatusNotFound}
+		return nil, &handlerError{nil, "Could not find study " + id, http.StatusNotFound}
 	}
 
-	// Update the database
-	e = collection.Update(bson.M{"_id": id},
-		bson.M{"name": s.StudyName,
-			"_id":         id,
-			"description": s.Description,
-		})
-	if e == nil {
-		log.Printf("Updated study %s studyname to %s", id, s.StudyName)
-	} else {
-		panic(e)
-	}
-
-	return make(map[string]string), nil
+	return s, nil
 }
 
 //remove the study from the database
@@ -194,13 +167,10 @@ func main() {
 	router := mux.NewRouter()
 	router.Handle("/", http.RedirectHandler("/static/", 302))
 	router.Handle("/studies", handler(listStudies)).Methods("GET")
-	router.Handle("/studies", handler(addStudy)).Methods("POST")
+	router.Handle("/studies", handler(addOrUpdateStudy)).Methods("POST")
 	router.Handle("/studies/{id}", handler(getStudy)).Methods("GET")
-	router.Handle("/studies/{id}", handler(updateStudy)).Methods("POST")
+	router.Handle("/studies/{id}", handler(addOrUpdateStudy)).Methods("POST")
 	router.Handle("/studies/{id}", handler(removeStudy)).Methods("DELETE")
-
-	//TODO: Add levels
-	//TODO: Add values
 
 	//Base routes
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", fileHandler))

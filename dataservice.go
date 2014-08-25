@@ -5,13 +5,17 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-func dbGetStudy(collection *mgo.Collection, id string) (interface{}, error) {
-	var study study
-	e := collection.FindId(bson.ObjectIdHex(id)).One(&study)
+func dbUpdateStudy(collection *mgo.Collection, study study) error {
 
+	// Update the database
+	e := collection.Update(bson.M{"_id": study.Id},
+		bson.M{"studyname": study.StudyName,
+			"_id":         study.Id,
+			"description": study.Description,
+		})
 	if e != nil {
-		return nil, e
+		return e
 	}
 
-	return study, nil
+	return nil
 }

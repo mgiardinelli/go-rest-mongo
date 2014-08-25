@@ -2,12 +2,13 @@
 	var myapp = new angular.module("myapp", ["ngResource"]);
 
 	// inject the $resource dependency here
-	myapp.controller("MainCtl", ["$scope", "$resource", function($scope, $resource){
+	myapp.controller("MainCtl", ["$scope", "$resource","$log", function($scope, $resource, $log){
 		// I designed the backend to play nicely with angularjs so this is all the
 		// setup we need to do all of the ususal operations.
 		var Study = $resource("/studies/:id", {id: '@id'}, {});
 
 		$scope.selected = null;
+		$scope.$log;
 
 		$scope.list = function(idx){
 			// Notice calls to Study are often given callbacks.
@@ -35,11 +36,11 @@
 
 		$scope.add = function() {
 			// TODO: Need to add actual entry forms
-			var studyname = prompt("Enter the book's study name.");
+			var studyname = prompt("Enter the study's study name.");
 			if(studyname == null){
 				return;
 			}
-			var description = prompt("Enter the book's description.");
+			var description = prompt("Enter the study's description.");
 			if(description == null){
 				return;
 			}
